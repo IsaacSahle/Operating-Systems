@@ -6,7 +6,7 @@ int
 main(int argc, char* argv[])
 {
 	if (argc != 3) {
-		fprintf(stderr, "Usage: inf tag interval\n");
+		fprintf(stderr, "Usage: inf tag interval %d\n",argc);
 	} else {
 		const char* tag = argv[1];
 		int interval = atoi(argv[2]);
@@ -15,5 +15,6 @@ main(int argc, char* argv[])
 			sleep(interval);
 		}
 	}
+return 0;
 }
 
