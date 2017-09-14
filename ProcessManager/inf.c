@@ -11,7 +11,7 @@ main(int argc, char* argv[])
 		const char* tag = argv[1];
 		int interval = atoi(argv[2]);
 		while(1) {
-			printf("%s\n", tag);
+			//printf("%s\n", tag);
 			sleep(interval);
 		}
 	}

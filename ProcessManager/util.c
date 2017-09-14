@@ -5,6 +5,7 @@ void insertNode(Node ** head ,pid_t pid){
  insertionNode->processId = pid;
  insertionNode->next = *head;
  *head = insertionNode;
+ sortList(head);
 }
 
 void removeNode(Node ** head ,pid_t pid){
@@ -44,4 +45,19 @@ int size(Node * head){
     count++;
   }
   return count;
+}
+
+void sortList(Node ** head){
+ //swap new item into list based on ascending pid
+ Node * curr = *head;
+ while(curr->next != NULL){
+   if(curr->processId < curr->next->processId){
+     pid_t temp = curr->next->processId;
+     curr->next->processId = curr->processId;
+     curr->processId = temp;
+   }else{
+     break;
+   }
+   curr = curr->next;
+ }
 }
