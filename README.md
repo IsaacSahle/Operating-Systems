@@ -7,5 +7,5 @@ Implementation of a process manager which supports the following commands
 + **bgstart** "pid" (starts the process with pid, that has been previously stopped)
 + **pstat** "pid" (displays various information of process with pid, including state, utime, stime, rss .... etc)
 
-* C ompiling: Run the provided Make file -> rsi exectubale file is created
+* Compiling: Run the provided Make file -> rsi exectubale file is created
 * Running: Run rsi
