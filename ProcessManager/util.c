@@ -51,7 +51,7 @@ void sortList(Node ** head){
  //swap new item into list based on ascending pid
  Node * curr = *head;
  while(curr->next != NULL){
-   if(curr->processId < curr->next->processId){
+   if(curr->processId > curr->next->processId){
      pid_t temp = curr->next->processId;
      curr->next->processId = curr->processId;
      curr->processId = temp;
@@ -60,4 +60,15 @@ void sortList(Node ** head){
    }
    curr = curr->next;
  }
+}
+
+int searchList(Node ** head, pid_t pid){
+  Node * curr = *head;
+  while(curr != NULL){
+    if(curr->processId == pid){
+      return 1;
+    }
+    curr = curr->next;
+  }
+  return 0; 
 }

@@ -12,9 +12,8 @@ main(int argc, char* argv[])
 		int interval = atoi(argv[2]);
 		while(1) {
 			//printf("%s\n", tag);
-			sleep(interval);
+			//sleep(interval);
 		}
 	}
 return 0;
 }
-
