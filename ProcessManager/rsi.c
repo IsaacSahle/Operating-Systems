@@ -2,7 +2,6 @@
 #include <string.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-#include <signal.h>
 #include <sys/wait.h>
 #include <sys/fcntl.h>
 #include "rsi.h"
@@ -15,6 +14,7 @@ void cleanTerminatedProcesses();
 void pstat(char * pid);
 void readFile(char * filePath, PstatInfo * stats,int statFlag);
 int pidExists(char * pid);
+void killAllChildren();
 
 Node * processList;
 
@@ -44,12 +44,17 @@ if(token == NULL){
   listProcesses();
 }else if(strcmp(token,BGKILL) == 0){
   sendSignal(token,SIGTERM);
+  usleep(SLEEP_TIME);
+  cleanTerminatedProcesses();  
 }else if(strcmp(token,BGSTOP) == 0){
   sendSignal(token,SIGSTOP);
 }else if(strcmp(token,BGSTART) == 0){
   sendSignal(token,SIGCONT);
 }else if(strcmp(token,PSTAT) == 0){
   pstat(token);
+}else if(strcmp(token,PMAN_QUIT) == 0){
+  killAllChildren();
+  exit(EXIT_SUCCESS);
 }else{
   printf("%s%s: %s\n",PMAN_PROMPT,token,UNRECOGNIZED_COMMAND);
 }
@@ -58,9 +63,7 @@ if(token == NULL){
 
 void createProcess(char * token){
   token = strtok(NULL,COMMAND_DELIMITER);
-  struct stat fileStats;
-  int result = stat(token, &fileStats);
-  if(token == NULL || result != 0){
+  if(token == NULL){
     fprintf(stdout,"%s%s\n",PMAN_PROMPT,BG_INCORRECT_USAGE);
     return;
   }
@@ -86,7 +89,7 @@ void createProcess(char * token){
         free(programArguments[i]);
        }
       }
-      fprintf(stderr,"%s%s\n",PMAN_PROMPT,EXECVP_ERROR_MESSAGE);
+      fprintf(stderr,"%s\n%s",EXECVP_ERROR_MESSAGE,PMAN_PROMPT);
       exit(EXIT_FAILURE);
     }
    }else{
@@ -121,7 +124,11 @@ void sendSignal(char * pid, int signal){
   if(pid == NULL){
     fprintf(stdout,"%s%s\n",PMAN_PROMPT,BGKILL_INCORRECT_USAGE);
     return;
+  }else if(!pidExists(pid)){
+    fprintf(stdout,"%s%s %s %s\n",PMAN_PROMPT,PID_PREFIX_ERROR_MESSAGE,pid,PID_SUFFIX_ERROR_MESSAGE);
+    return; 
   }
+
   pid_t processId = strtol(pid,NULL,BASE_TEN);
   int success = kill(processId,signal);
   if(success == -1){
@@ -175,4 +182,8 @@ void readFile(char * filePath, PstatInfo * stats,int statFlag){
 int pidExists(char * pid){
  pid_t processId = strtol(pid,NULL,BASE_TEN);
  return searchList(&processList,processId); 
+}
+
+void killAllChildren(){
+ removeAll(&processList);
 }

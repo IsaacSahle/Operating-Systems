@@ -1,6 +1,7 @@
 #ifndef RSI_HEADER_FILE
 #include <unistd.h>
 #include <stdlib.h>
+#include <signal.h>
 #define RSI_HEADER_FILE
 
 /* Integer Constants */
@@ -11,6 +12,7 @@
 #define ANY_CHILD -1
 #define STOPPED 0
 #define MAX_PSTAT 255
+#define SLEEP_TIME 1000
 
 /* String Constants */
 #define PROC_PREFIX "/proc/"
@@ -24,6 +26,7 @@
 #define READ "r"
 #define GREP_PREFIX "grep ctxt"
 #define PROCESS_STATE "grep State:"
+#define PMAN_QUIT "quit"
 
 /* Incorrect Usage */
 #define BG_INCORRECT_USAGE "Usage: bg <required: file name> <optional: arguments>"
@@ -68,4 +71,5 @@ void removeNode(Node ** head, pid_t pid);
 int size(Node * head);
 void sortList(Node ** head);
 int searchList(Node ** head, pid_t pid);
+void removeAll(Node ** head);
 #endif

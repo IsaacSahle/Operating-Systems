@@ -72,3 +72,13 @@ int searchList(Node ** head, pid_t pid){
   }
   return 0; 
 }
+
+void removeAll(Node ** head){
+Node * curr = *head;
+while(curr != NULL){
+ *head = (*head)->next;
+  kill(curr->processId,SIGKILL);
+  free(curr);
+  curr = *head;
+}
+}
