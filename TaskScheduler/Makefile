@@ -2,7 +2,7 @@
 all: airline
 
 airline: airline.c util.c
-	gcc -Wall airline.c util.c -o airline
+	gcc -Wall airline.c util.c -o ACS
 
 .PHONY clean:
 clean:

@@ -1,13 +1,20 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+// Integer Constants
 #define NQUEUE 4
+#define MAX_BUFFER 10
+//String Constants
+#define READ "r"
+#define DELIMITERS ":,"
+#define ERROR_INPUT_FILE "ERROR: incorrect num args or cannot open input file"
 
-struct customer_info{
-int user_id;
+typedef struct {
+int customer_id;
 int service_time;
 int arrival_time;
-};
+} customer_info;
 
 pthread_mutex_t queueLengthLock;
 pthread_mutex_t qLock1;
