@@ -1,5 +1,7 @@
 #include "airline.h"
 
+void * customer_runner(void * info);
+
 struct timeval init_time;
 double overall_waiting_time;
 int queue_length[NQUEUE];
@@ -22,7 +24,7 @@ int main(int argc, char * argv []) {
   fgets(lineBuffer, MAX_BUFFER,fp); 
   
   int numCustomers = lineBuffer == NULL ? 0 : atoi(lineBuffer);
-  pthread_t customer [numCustomers];
+  pthread_t customers [numCustomers];
   customer_info info [numCustomers];
   char * token;
   
@@ -36,8 +38,29 @@ int main(int argc, char * argv []) {
     info[i].arrival_time = atoi(token);
     token = strtok(NULL,DELIMITERS);
     info[i].service_time = atoi(token);
-    printf("%d:%d,%d\n",info[i].customer_id,info[i].arrival_time,info[i].service_time);
-    //pthread_create(&customers[i],NULL,customer_runner,(void *) &info[i])
+    pthread_create(&customers[i],NULL,customer_runner,(void *) &info[i]);
   }
+  
+  for(i = 0; i < numCustomers; i++){
+     pthread_join(customers[i],NULL);
+  }
+  
   return 0;
 }
+
+
+
+
+
+void * customer_runner(void * info){
+  customer_info *  customerInfo = (customer_info *) info;
+  // Arrival time is a 10th of a second (e.g time == 2 is .2 seconds)
+  usleep(customerInfo->arrival_time * MICROSECOND_CONVERSION);
+  fprintf(stdout, "A customer arrives: customer ID %d. \n", customerInfo->customer_id);
+
+  //printf("%d\n",customerInfo->customer_id);
+  pthread_exit(NULL);
+  return NULL;
+}
+
+

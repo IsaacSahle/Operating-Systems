@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+
 // Integer Constants
 #define NQUEUE 4
 #define MAX_BUFFER 10
+#define MICROSECOND_CONVERSION 100000
+
 //String Constants
 #define READ "r"
 #define DELIMITERS ":,"
