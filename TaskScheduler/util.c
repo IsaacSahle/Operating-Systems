@@ -1,21 +1,113 @@
 #include "airline.h"
 
 void initLocks(){
-  // Initialize locks with default attributes
-  pthread_mutex_init(&queueLengthLock,NULL);
-  pthread_mutex_init(&qLock1,NULL);
-  pthread_mutex_init(&qLock2,NULL);
-  pthread_mutex_init(&qLock3,NULL);
-  pthread_mutex_init(&qLock4,NULL);
-  pthread_mutex_init(&clerkLock1,NULL);
-  pthread_mutex_init(&clerkLock2,NULL);
+  int i;
+  for(i = 0; i < NQUEUE; i++){
+    pthread_mutex_init(&q_locks[i],NULL);
+  }
+  for(i = 0; i < NCLERKS; i++){
+    pthread_mutex_init(&clerk_locks[i],NULL);
+  } 
+  pthread_mutex_init(&queue_lengths_lock,NULL);
+  pthread_mutex_init(&empty_queues_lock,NULL);
+  pthread_mutex_init(&clerk_serving_lock,NULL);
 }
 
 void initConVars(){
-  pthread_cond_init(&qCond1,NULL);
-  pthread_cond_init(&qCond2,NULL);
-  pthread_cond_init(&qCond3,NULL);
-  pthread_cond_init(&qCond4,NULL);
-  pthread_cond_init(&clerkCond1,NULL);
-  pthread_cond_init(&clerkCond2,NULL);
+  int i;
+  for(i = 0; i < NQUEUE; i++){
+    pthread_cond_init(&q_conds[i],NULL);
+  }
+  for(i = 0; i < NCLERKS; i++){
+    pthread_cond_init(&clerk_conds[i],NULL);
+  }
+  pthread_cond_init(&empty_queues_cond,NULL);
+}
+
+// Retrieves index of the first (queues of equal length) shortest or longest queue
+int retrieveQueueNumber(int flag){
+ int i;
+ int queue_num = queue_lengths[0];
+ int index = 0;
+ for(i = 0; i < NQUEUE;i++){
+   if(queue_lengths[i] < queue_num && flag == SHORTEST){
+     queue_num = queue_lengths[i];
+     index = i;
+   }else if(queue_lengths[i] > queue_num && flag == LONGEST){
+     queue_num = queue_lengths[i];
+     index = i;
+   }
+ }
+ return index;
+}
+
+int retrieveClerk(int c_id){
+  int i;
+  for(i = 0; i < NCLERKS;i++){
+    if(c_id == serve_customer_ids[i]){
+     return i;
+    }
+  }
+  return -1;
+}
+
+int isValidNextCustomer(int queue_num,int c_id){
+ return c_id == peek(&queues[queue_num]);
+}
+
+// Source for queue operations: https://gist.github.com/kroggen/5fc7380d30615b2e70fcf9c7b69997b6
+void enqueue(node_t **head, int val) {
+    node_t *new_node = malloc(sizeof(node_t));
+    if (!new_node) return;
+
+    new_node->customer_id = val;
+    new_node->next = *head;
+
+    *head = new_node;
+}
+
+// TODO(isaac): Optimization point, don't traverese the 
+// whole queue, keep tail pointer and remove in O(1).
+int dequeue(node_t **head) {
+    node_t *current, *prev = NULL;
+    int retval = -1;
+
+    if (*head == NULL) return -1;
+
+    current = *head;
+    while (current->next != NULL) {
+        prev = current;
+        current = current->next;
+    }
+
+    retval = current->customer_id;
+    free(current);
+    
+    if (prev)
+        prev->next = NULL;
+    else
+        *head = NULL;
+
+    return retval;
+}
+
+int peek(node_t ** head){
+  if(head == NULL){
+    return -1;
+  }
+  
+  node_t * current = *head;
+  while(current->next != NULL){
+    current = current->next;
+  }
+  return current->customer_id;
+}
+
+void print_list(node_t *head) {
+    node_t *current = head;
+
+    while (current != NULL) {
+        printf("%d\n", current->customer_id);
+        current = current->next;
+    }
 }
