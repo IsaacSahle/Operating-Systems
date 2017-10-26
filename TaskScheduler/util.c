@@ -7,10 +7,11 @@ void initLocks(){
   }
   for(i = 0; i < NCLERKS; i++){
     pthread_mutex_init(&clerk_locks[i],NULL);
+    pthread_mutex_init(&clerk_serving_locks[i],NULL);
   } 
   pthread_mutex_init(&queue_lengths_lock,NULL);
   pthread_mutex_init(&empty_queues_lock,NULL);
-  pthread_mutex_init(&clerk_serving_lock,NULL);
+  pthread_mutex_init(&total_wait_time_lock,NULL);
 }
 
 void initConVars(){
@@ -44,15 +45,48 @@ int retrieveQueueNumber(int flag){
 int retrieveClerk(int c_id){
   int i;
   for(i = 0; i < NCLERKS;i++){
+    pthread_mutex_lock(&clerk_serving_locks[i]);
     if(c_id == serve_customer_ids[i]){
-     return i;
+      serve_customer_ids[i] = DEFAULT_CU_ID;
+      pthread_mutex_unlock(&clerk_serving_locks[i]);
+      return i;
     }
+   pthread_mutex_unlock(&clerk_serving_locks[i]);
   }
   return -1;
 }
 
 int isValidNextCustomer(int queue_num,int c_id){
  return c_id == peek(&queues[queue_num]);
+}
+
+void updateTotalWaitTime(struct timeval * queue_time){
+  double wait_time = getCurrentSimulationTime(queue_time);
+  pthread_mutex_lock(&total_wait_time_lock);
+  overall_waiting_time += wait_time; 
+  pthread_mutex_unlock(&total_wait_time_lock);
+}
+
+void handleClerkSelection(int queue_num,int customer_id,int * cl_num){
+  pthread_mutex_lock(&queue_lengths_lock);
+  queue_lengths[queue_num]--;
+  dequeue(&queues[queue_num]);
+  (*cl_num) = retrieveClerk(customer_id);
+  pthread_mutex_unlock(&queue_lengths_lock);
+  pthread_mutex_unlock(&q_locks[queue_num]);   
+}
+//Source: connex assignment #2 resources (sample_gettimeofday.c)
+double getCurrentSimulationTime(struct timeval * start_time){
+  
+  struct timeval cur_time;
+  double cur_secs, init_secs;
+  
+  init_secs = (start_time->tv_sec + (double) start_time->tv_usec / 1000000);
+  
+  gettimeofday(&cur_time, NULL);
+  cur_secs = (cur_time.tv_sec + (double) cur_time.tv_usec / 1000000);
+  
+  return cur_secs - init_secs;
 }
 
 // Source for queue operations: https://gist.github.com/kroggen/5fc7380d30615b2e70fcf9c7b69997b6

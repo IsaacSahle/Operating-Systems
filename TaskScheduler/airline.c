@@ -3,9 +3,6 @@
 void * customer_runner(void * info);
 void * clerk_runner(void * info);
 
-struct timeval init_time;
-double overall_waiting_time;
-
 int main(int argc, char * argv []) {
   FILE * fp;
   int fileOpen = (argc == 2 && (fp = fopen(argv[1],READ)) != NULL);
@@ -15,9 +12,9 @@ int main(int argc, char * argv []) {
     return EXIT_FAILURE;
   } 
   
-  // initialize all the condition variable and thread lock will be used
   initLocks();
   initConVars();
+  gettimeofday(&init_time, NULL); 
   memset(queue_lengths,0,sizeof(queue_lengths));
 
   char line_buffer[MAX_BUFFER];
@@ -25,9 +22,13 @@ int main(int argc, char * argv []) {
   fgets(line_buffer, MAX_BUFFER,fp); 
   
   int num_customers = line_buffer == NULL ? 0 : atoi(line_buffer);
+  
+  // TODO(isaacsahle): Optimization point, waste less memory by determining the number of valid customers ahead of time
   pthread_t customers [num_customers];
   customer_info cus_info [num_customers];
-  pthread_t clerks [NCLERKS];
+  int valid_customers [num_customers];
+ 
+   pthread_t clerks [NCLERKS];
   clerk_info cl_info [NCLERKS];
   char * token;
   
@@ -46,12 +47,24 @@ int main(int argc, char * argv []) {
     cus_info[i].arrival_time = atoi(token);
     token = strtok(NULL,DELIMITERS);
     cus_info[i].service_time = atoi(token);
-    pthread_create(&customers[i],NULL,customer_runner,(void *) &cus_info[i]);
+    if(cus_info[i].customer_id >= 0 && cus_info[i].arrival_time >= 0 && cus_info[i].service_time >= 0){ 
+     int isSuccess = pthread_create(&customers[i],NULL,customer_runner,(void *) &cus_info[i]); 
+     valid_customers[i] = (isSuccess == 0) ? VALID_CU : INVALID_CU;
+    }else{
+      valid_customers[i] = INVALID_CU;
+    }
   }
-  
+
+  int num_invalid_cu = 0;
   for(i = 0; i < num_customers; i++){
-     pthread_join(customers[i],NULL);
+    if(valid_customers[i] == VALID_CU){ 
+      pthread_join(customers[i],NULL);
+    }else{
+      num_invalid_cu++;
+    }
   }
+
+  fprintf(stdout,"%s %.4f %s\n",AVG_WAIT_TIME_PRE,overall_waiting_time/(num_customers - num_invalid_cu),AVG_WAIT_TIME_SUFF);
   
   return 0;
 }
@@ -60,7 +73,7 @@ void * customer_runner(void * info){
   customer_info *  customer_inf = (customer_info *) info;
   // Arrival time is a 10th of a second (e.g time == 2 is .2 seconds)
   usleep(customer_inf->arrival_time * MICROSECOND_CONVERSION);
-  fprintf(stdout, "A customer arrives: customer ID %d. \n", customer_inf->customer_id);
+  fprintf(stdout, "%s %d.\n",CU_ARRIVES,customer_inf->customer_id);
 
   int queue_num;
   int q_length;
@@ -76,12 +89,16 @@ void * customer_runner(void * info){
   q_length = queue_lengths[queue_num]; 
 
   pthread_mutex_unlock(&queue_lengths_lock);
-  
-  fprintf(stdout, "A customer enters a queue: the queue ID %1d, and length of the queue %d. \n",queue_num,q_length);
+ 
+  // Start calculating wait time
+  struct timeval queue_time;
+  gettimeofday(&queue_time,NULL);
+ 
+  fprintf(stdout, "%s %d %s %d.\n",CU_ENTERS_PRE,(queue_num + 1),CU_ENTERS_SUFF,q_length);
   
   // Wake any idle clerks threads
   pthread_mutex_lock(&empty_queues_lock);
-  pthread_cond_broadcast(&empty_queues_cond);
+  pthread_cond_signal(&empty_queues_cond);
   pthread_mutex_unlock(&empty_queues_lock);
   
   // Wait on queue condition variable
@@ -89,23 +106,17 @@ void * customer_runner(void * info){
     pthread_cond_wait(&q_conds[queue_num],&q_locks[queue_num]);
     if(isValidNextCustomer(queue_num,customer_inf->customer_id)){
        // Sweet, we are at the front of queue & clerk has selected us :)
-       pthread_mutex_lock(&queue_lengths_lock);
-       pthread_mutex_lock(&clerk_serving_lock);
-       queue_lengths[queue_num]--;
-       dequeue(&queues[queue_num]);
-       my_clerk_num = retrieveClerk(customer_inf->customer_id);
-       pthread_mutex_unlock(&clerk_serving_lock);
-       pthread_mutex_unlock(&queue_lengths_lock);
-       pthread_mutex_unlock(&q_locks[queue_num]);  
+      updateTotalWaitTime(&queue_time);
+      handleClerkSelection(queue_num,customer_inf->customer_id,&my_clerk_num);
        break;
     } 
     pthread_cond_signal(&q_conds[queue_num]);
   }
-   
-  fprintf(stdout,"Customer: %d starts being served by %d\n",customer_inf->customer_id,my_clerk_num);
+
+  fprintf(stdout,"%s %s %s %s %.2f %s %d %s %d.\n",CL,START,CL_SERVE,START_TIME,0.00,CU_ID,customer_inf->customer_id,CL_ID,(my_clerk_num + 1));
   // Service time is a 10th of a second 
   usleep(customer_inf->service_time * MICROSECOND_CONVERSION);
-  fprintf(stdout,"Customer: %d finished being served by %d\n",customer_inf->customer_id,my_clerk_num);
+  fprintf(stdout,"%s %s %s %s %.2f %s %d %s %d.\n",CL,FINISHES,CL_SERVE,END_TIME,0.00,CU_ID,customer_inf->customer_id,CL_ID,(my_clerk_num + 1));
   
 
   // Notify clerk we are done
@@ -139,11 +150,11 @@ void * clerk_runner(void * info){
 
     // Signal to customer in longest queue
     pthread_mutex_lock(&q_locks[queue_index]);
-    pthread_mutex_lock(&clerk_serving_lock);
+    pthread_mutex_lock(&clerk_serving_locks[clerk_inf->clerk_num]);
     // Write customer id for verifying clerk in customer thread
     serve_customer_ids[clerk_inf->clerk_num] = peek(&queues[queue_index]);
     pthread_cond_signal(&q_conds[queue_index]); 
-    pthread_mutex_unlock(&clerk_serving_lock);
+    pthread_mutex_unlock(&clerk_serving_locks[clerk_inf->clerk_num]);
     pthread_mutex_unlock(&q_locks[queue_index]);
   
     // Wait for customer thread to signal back once service is finished
