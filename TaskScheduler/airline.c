@@ -28,7 +28,7 @@ int main(int argc, char * argv []) {
   customer_info cus_info [num_customers];
   int valid_customers [num_customers];
  
-   pthread_t clerks [NCLERKS];
+  pthread_t clerks [NCLERKS];
   clerk_info cl_info [NCLERKS];
   char * token;
   
@@ -54,7 +54,9 @@ int main(int argc, char * argv []) {
       valid_customers[i] = INVALID_CU;
     }
   }
-
+  
+  fclose(fp);
+ 
   int num_invalid_cu = 0;
   for(i = 0; i < num_customers; i++){
     if(valid_customers[i] == VALID_CU){ 
