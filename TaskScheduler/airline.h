@@ -4,6 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <errno.h>
 
 // Integer Constants
 #define NQUEUE 4
@@ -18,9 +19,9 @@
 
 //String Constants
 #define READ "r"
-#define CU_ARRIVES "A customer arrives: customer ID"
-#define CU_ENTERS_PRE "A customer enters a queue: the queue ID"
-#define CU_ENTERS_SUFF ", and length of the queue"
+#define CU_ARRIVES "Customer arrives with ID:"
+#define CU_ENTERS_PRE "Customer enters queue:"
+#define CU_ENTERS_SUFF ", and length"
 #define CL "A clerk"
 #define CL_SERVE "serving a customer:"
 #define CU_ID ", the customer ID"
@@ -29,6 +30,7 @@
 #define FINISHES "finishes"
 #define START_TIME "start time"
 #define END_TIME "end time"
+#define AT_TIME "at time"
 #define AVG_WAIT_TIME_PRE "The average waiting time for all customers in the system is:"
 #define AVG_WAIT_TIME_SUFF "seconds."
 #define DELIMITERS ":,"
@@ -50,11 +52,12 @@ typedef struct node {
 } node_t;
 
 pthread_mutex_t queue_lengths_lock;
-pthread_mutex_t q_locks[NQUEUE];
+pthread_mutex_t q_lock;
 pthread_mutex_t clerk_locks[NCLERKS];
 pthread_mutex_t empty_queues_lock;
-pthread_mutex_t clerk_serving_locks[NCLERKS];
+pthread_mutex_t clerk_serving_lock;
 pthread_mutex_t total_wait_time_lock;
+pthread_mutex_t init_time_lock;
 pthread_cond_t q_conds[NQUEUE];
 pthread_cond_t clerk_conds[NCLERKS];
 pthread_cond_t empty_queues_cond;
@@ -67,10 +70,8 @@ double overall_waiting_time;
 void initLocks();
 void initConVars();
 int retrieveQueueNumber(int flag);
-int retrieveClerk(int c_id);
-int isValidNextCustomer(int queue_num,int c_id);
-double getCurrentSimulationTime(); 
-void handleClerkSelection(int queue_num, int customer_id,int * cl_num);
+int isBeingServed(int cl_index);
+double getCurrentSimulationTime(struct timeval * start_time); 
 void updateTotalWaitTime(struct timeval * queue_time);
 void enqueue(node_t** head, int val);
 int dequeue(node_t** head);
