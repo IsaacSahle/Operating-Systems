@@ -9,7 +9,7 @@
 // Integer Constants
 #define NQUEUE 4
 #define NCLERKS 2
-#define MAX_BUFFER 10
+#define MAX_BUFFER 50
 #define MICROSECOND_CONVERSION 100000
 #define SHORTEST 1
 #define LONGEST 0

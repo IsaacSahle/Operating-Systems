@@ -16,7 +16,7 @@ int main(int argc, char * argv []) {
   initConVars();
   gettimeofday(&init_time, NULL); 
   memset(queue_lengths,0,sizeof(queue_lengths));
-  memset(serve_customer_ids,-1,sizeof(NCLERKS));
+  memset(serve_customer_ids,DEFAULT_CU_ID,sizeof(NCLERKS));
 
   char line_buffer[MAX_BUFFER];
   memset(line_buffer,0,sizeof(line_buffer));
@@ -33,13 +33,14 @@ int main(int argc, char * argv []) {
   char * token;
   
   int i;
+  // Spawn clerk threads
   for(i = 0; i < NCLERKS; i++){
     cl_info[i].clerk_num = (i);
     pthread_create(&clerks[i],NULL,clerk_runner,(void *) &cl_info[i]);
   } 
  
+  // Spawn customer threads
   for(i = 0; i < num_customers;i++){
-    // initialize info
     fgets(line_buffer, MAX_BUFFER,fp);
     token = strtok(line_buffer,DELIMITERS);
     cus_info[i].customer_id = atoi(token);
@@ -57,6 +58,7 @@ int main(int argc, char * argv []) {
   
   fclose(fp);
  
+  // Join on valid customer threads(non-neg,pthread_create() success)
   int num_invalid_cu = 0;
   for(i = 0; i < num_customers; i++){
     if(valid_customers[i] == VALID_CU){ 
