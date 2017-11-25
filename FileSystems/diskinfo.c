@@ -6,13 +6,11 @@ int main(int argc,char * argv[]){
     perror("ERROR");
     return EXIT_FAILURE;
   }
-  char os_name[OS_NAME_BYTES + 1];
-  char disk_label[DISK_LABEL_BYTES + 1];
-  char bps[BPS];
-  char sector_count[SC];
-  char sector_per_FAT[SF];
-  char num_FAT[NF];
-  char temp[DISK_LABEL_BYTES + 1];
+  unsigned char os_name[OS_NAME_BYTES + 1];
+  unsigned char bps[BPS];
+  unsigned char sector_count[SC];
+  unsigned char sector_per_FAT[SF];
+  unsigned char num_FAT[NF];
   // OS name
   retrieve_bytes(fp,OS_NAME,OS_NAME_BYTES,os_name);
   os_name[OS_NAME_BYTES] = '\0';
@@ -35,38 +33,25 @@ int main(int argc,char * argv[]){
   int number_of_FAT = (int) num_FAT[0];
   
   // Free Size of the Disk
-  int FAT1_start = (1) * bytes_per_sc;
-  int FAT1_size = (sc_per_FAT * bytes_per_sc);
-  char FAT1_buffer[FAT1_size + 1];
-  retrieve_bytes(fp,FAT1_start,FAT1_size,FAT1_buffer);
-  FAT1_buffer[FAT1_size] = '\0';
-  int free_size = free_disk_size(sector_count,FAT1_buffer);
-  // printf("%s\n",FAT1_buffer);
-  
-  
+  int free_size = free_disk_size(fp,sc_count,bytes_per_sc); 
   
   // Disk Label
   int root_start = (1 + (number_of_FAT * sc_per_FAT)) * bytes_per_sc;
-  char dir_entry[32 + 1];
+  unsigned char dir_entry[DIR_ENTRY + 1];
   retrieve_disk_label(fp,root_start,dir_entry);
-  dir_entry[32] = '\0';
+  dir_entry[ATTR_BYTE] = '\0';
   
   //Files in Root dir
-  int files_root_dir = 
+  int files_root_dir = root_dir_files(fp,root_start);
   
-  
-  
-  
-  
-  printf("%s\n",os_name);
-  printf("%d\n",bytes_per_sc);
-  printf("%d\n",number_of_FAT);
-  printf("%d\n",sc_count);
-  printf("%d\n",sc_per_FAT);
-  printf("%s\n",dir_entry);
-  //printf("%s\n",temp);
+  printf("OS Name: %s\n",os_name);
+  printf("Label of the disk: %s\n",dir_entry);
+  printf("Total size of the disk: %d\n",(sc_count * bytes_per_sc));
+  printf("Free size of the disk: %d\n",free_size);
+  printf("Number of files in root dir (not including sub dirs): %d\n",files_root_dir);
+  printf("Number of FAT copies: %d\n",number_of_FAT);
+  printf("Sectors per FAT: %d\n",sc_per_FAT);
 
   fclose(fp);
-  // OS name bytes 3-11
   return 0;
 }

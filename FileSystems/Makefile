@@ -4,8 +4,8 @@ all: diskinfo disklist diskput diskget
 diskinfo: diskinfo.c util.c
 	gcc -Wall diskinfo.c util.c  -o diskinfo
 
-disklist: disklist.c 
-	gcc -Wall disklist.c -o disklist
+disklist: disklist.c util.c
+	gcc -Wall disklist.c util.c -o disklist
 
 diskput: diskput.c 
 	gcc -Wall diskput.c -o diskput
