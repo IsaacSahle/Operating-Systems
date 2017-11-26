@@ -133,6 +133,50 @@ int root_dir_entries(FILE * fp,int root_start){
 	return buffer_to_int(max_root_buffer);
 }
 
+int file_size(FILE * fp, char * search_name){
+	unsigned char dir_entry[DIR_ENTRY];
+  char file_name[13];
+
+  int root_start = (19) * 512;
+
+	int max_root_entries = root_dir_entries(fp,root_start);
+	int i;
+	for(i = 0; i < max_root_entries;i++){
+		retrieve_bytes(fp,root_start,DIR_ENTRY,dir_entry);
+		if(dir_entry[ATTR_BYTE] != IGNORE_ATTR 
+			&& (dir_entry[ATTR_BYTE] & DISK_LABEL_ATTR) != DISK_LABEL_ATTR
+			&& dir_entry[FIRST_BYTE] != FREE
+			&& dir_entry[FIRST_BYTE] != EMPTY
+			&& (dir_entry[ATTR_BYTE] & SUB_DIR_ATTR) != SUB_DIR_ATTR){
+		  	
+        int j;
+        for(j = 0; j < 8;j++){
+          if(dir_entry[j] == ' '){
+            break;
+          }
+          file_name[j] = dir_entry[j]; 
+        }
+
+        file_name[j] = '.';
+        j++;
+
+       int count;
+       for(count = 0;count < 3;count++){
+          file_name[j] = dir_entry[8 + count];
+          j++;
+       }
+      
+       file_name[j] = '\0';
+       if(strcmp(file_name,search_name) == 0){
+          return (dir_entry[28] & 0xFF) + ((dir_entry[29] & 0xFF) << 8) + ((dir_entry[30] & 0xFF) << 16) + ((dir_entry[31] & 0xFF) << 24);
+       }
+		}
+		
+		root_start += DIR_ENTRY;
+	}
+ return -1; 
+}
+
 int free_disk_size(FILE * fp,int sector_count,int bps){
    int i;
    int free_count = 0;
@@ -142,4 +186,48 @@ int free_disk_size(FILE * fp,int sector_count,int bps){
 	   }
    }
 	return (free_count * bps);
+}
+
+int first_sector(FILE * fp, char * search_name){
+	unsigned char dir_entry[DIR_ENTRY];
+  char file_name[13];
+
+  int root_start = (19) * 512;
+
+	int max_root_entries = root_dir_entries(fp,root_start);
+	int i;
+	for(i = 0; i < max_root_entries;i++){
+		retrieve_bytes(fp,root_start,DIR_ENTRY,dir_entry);
+		if(dir_entry[ATTR_BYTE] != IGNORE_ATTR 
+			&& (dir_entry[ATTR_BYTE] & DISK_LABEL_ATTR) != DISK_LABEL_ATTR
+			&& dir_entry[FIRST_BYTE] != FREE
+			&& dir_entry[FIRST_BYTE] != EMPTY
+			&& (dir_entry[ATTR_BYTE] & SUB_DIR_ATTR) != SUB_DIR_ATTR){
+		  	
+        int j;
+        for(j = 0; j < 8;j++){
+          if(dir_entry[j] == ' '){
+            break;
+          }
+          file_name[j] = dir_entry[j]; 
+        }
+
+        file_name[j] = '.';
+        j++;
+
+       int count;
+       for(count = 0;count < 3;count++){
+          file_name[j] = dir_entry[8 + count];
+          j++;
+       }
+      
+       file_name[j] = '\0';
+       if(strcmp(file_name,search_name) == 0){
+          return (dir_entry[26]) + (dir_entry[27] << 8);
+       }
+		}
+		
+		root_start += DIR_ENTRY;
+	}
+ return -1; 
 }

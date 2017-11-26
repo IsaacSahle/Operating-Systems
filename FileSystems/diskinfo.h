@@ -1,5 +1,7 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 //INTEGER CONSTANTS
 #define DISK_INFO 55
@@ -43,3 +45,5 @@ void root_dir_list(FILE * fp,int root_start);
 int free_disk_size(FILE * fp,int sector_count,int bps);
 int root_dir_entries(FILE * fp,int root_start);
 void file_info(unsigned char * dir_entry);
+int file_size(FILE * fp,char * search_name);
+int first_sector(FILE * fp,char * search_name);
